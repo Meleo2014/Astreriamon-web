@@ -1,0 +1,1652 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover" />
+  <title>AsteriaMon – Mobile Koop Ultimate (2 Geräte)</title>
+
+  <!-- PeerJS (P2P WebRTC helper) -->
+  <script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
+
+  <style>
+    :root{
+      --bg1:#0b1020;
+      --bg2:#122a4a;
+      --stroke:rgba(255,255,255,.12);
+      --text:#f4f8ff;
+      --muted:rgba(244,248,255,.72);
+      --accent:#5dd6ff;
+      --accent2:#8cffc6;
+      --warn:#ffd35d;
+      --danger:#ff5d7a;
+      --shadow: 0 18px 50px rgba(0,0,0,.35);
+      --r:18px;
+    }
+    *{ box-sizing:border-box; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; }
+    body{
+      margin:0;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 700px at 20% 15%, rgba(93,214,255,.22) 0%, rgba(0,0,0,0) 55%),
+        radial-gradient(900px 600px at 85% 20%, rgba(140,255,198,.18) 0%, rgba(0,0,0,0) 60%),
+        radial-gradient(1200px 800px at 50% 110%, rgba(255,211,93,.12) 0%, rgba(0,0,0,0) 50%),
+        linear-gradient(180deg, var(--bg2), var(--bg1));
+      min-height:100vh;
+      padding-bottom: env(safe-area-inset-bottom);
+      overscroll-behavior: none;
+      touch-action: manipulation;
+    }
+    .wrap{ max-width:1100px; margin:0 auto; padding:12px; display:grid; gap:12px; }
+    header{
+      display:flex; gap:12px; align-items:center; justify-content:space-between;
+      padding:12px 12px;
+      border-radius: var(--r);
+      border:1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+      box-shadow: var(--shadow);
+    }
+    header h1{ margin:0; font-size:16px; letter-spacing:.2px; }
+    header .sub{ font-size:12px; color:var(--muted); margin-top:2px; line-height:1.35; }
+    .btnbar{ display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; }
+
+    button{
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:14px;
+      cursor:pointer;
+      font-weight:900;
+      font-size:12px;
+      letter-spacing:.2px;
+      box-shadow: 0 10px 24px rgba(0,0,0,.18);
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button:active{ transform: translateY(1px); }
+    button.primary{ background: rgba(93,214,255,.18); border-color: rgba(93,214,255,.35); }
+    button.ok{ background: rgba(140,255,198,.16); border-color: rgba(140,255,198,.33); }
+    button.danger{ background: rgba(255,93,122,.16); border-color: rgba(255,93,122,.33); }
+    button.ghost{ background: rgba(0,0,0,.10); }
+    button:disabled{ opacity:.45; filter:saturate(.7); cursor:not-allowed; }
+
+    .row{ display:grid; grid-template-columns: 1fr; gap:12px; }
+    @media (min-width: 980px){ .row{ grid-template-columns: 1fr 390px; align-items:start; } }
+
+    .card{
+      border-radius: var(--r);
+      border:1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .card .hd{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:10px 12px;
+      border-bottom:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+    }
+    .card .hd b{ font-size:13px; }
+    .card .bd{ padding:12px; }
+
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:7px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.18);
+      color:var(--muted);
+      font-size:12px;
+      font-weight:900;
+    }
+    .dot{ width:10px; height:10px; border-radius:50%; background: var(--warn); box-shadow:0 0 0 4px rgba(255,211,93,.18); }
+    .dot.on{ background: var(--accent2); box-shadow:0 0 0 4px rgba(140,255,198,.18); }
+
+    canvas{
+      width:100%;
+      height:auto;
+      display:block;
+      background:#0b0f14;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.10);
+    }
+
+    .small{ font-size:12px; line-height:1.45; color:var(--muted); }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+    .hr{ height:1px; background:rgba(255,255,255,.10); margin:10px 0; }
+
+    .kv{ display:grid; grid-template-columns: 120px 1fr; gap:6px 10px; font-size:12px; color:var(--muted); }
+    .kv b{ color:var(--text); font-weight:900; }
+
+    .log{
+      max-height: 280px;
+      overflow:auto;
+      padding:10px;
+      border-radius:14px;
+      background: rgba(0,0,0,.22);
+      border:1px solid rgba(255,255,255,.12);
+      font-size:12px;
+    }
+    .log div{ margin-bottom:6px; color:var(--muted); }
+    .log div strong{ color:var(--text); }
+
+    input{
+      width:100%;
+      padding:12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.20);
+      color:var(--text);
+      font-size:13px;
+      outline:none;
+    }
+
+    /* Modal */
+    .overlay{
+      position:fixed; inset:0; display:none; place-items:center;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(8px);
+      padding:12px;
+      z-index: 50;
+    }
+    .overlay.show{ display:grid; }
+    .modal{
+      width:min(900px, 100%);
+      border-radius: 22px;
+      border:1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+      overflow:hidden;
+      box-shadow: var(--shadow);
+    }
+    .modal .mh{
+      padding:12px;
+      display:flex; justify-content:space-between; align-items:center;
+      border-bottom:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+    }
+    .modal .mh b{ font-size:13px; }
+    .modal .mb{ padding:12px; }
+
+    /* Touch Controls */
+    .touchbar{
+      position: fixed;
+      left:0; right:0; bottom:0;
+      padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,.78));
+      display:none;
+      z-index: 40;
+      pointer-events: none; /* enable only on inner elements */
+    }
+    .touchbar .inner{
+      max-width:1100px;
+      margin:0 auto;
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:flex-end;
+      pointer-events: none;
+    }
+
+    /* Joystick */
+    .joyWrap{ pointer-events:auto; }
+    .joyBase{
+      width: clamp(110px, 22vw, 150px);
+      height: clamp(110px, 22vw, 150px);
+      border-radius: 999px;
+      border:1px solid rgba(255,255,255,.18);
+      background: rgba(0,0,0,.22);
+      box-shadow: 0 16px 40px rgba(0,0,0,.35);
+      position: relative;
+      touch-action: none;
+    }
+    .joyRing{
+      position:absolute; inset: 10px;
+      border-radius:999px;
+      border:1px dashed rgba(255,255,255,.20);
+      opacity:.6;
+    }
+    .joyKnob{
+      width: clamp(52px, 11vw, 64px);
+      height: clamp(52px, 11vw, 64px);
+      border-radius: 999px;
+      background: rgba(93,214,255,.22);
+      border:1px solid rgba(93,214,255,.35);
+      position:absolute;
+      left:50%; top:50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 12px 30px rgba(0,0,0,.35);
+    }
+
+    /* Action buttons */
+    .actionStack{
+      pointer-events:auto;
+      display:flex;
+      gap:12px;
+      align-items:flex-end;
+    }
+    .bigBtn{
+      width: clamp(86px, 18vw, 110px);
+      height: clamp(86px, 18vw, 110px);
+      border-radius: 24px;
+      font-size: 14px;
+      padding: 0;
+      display:grid;
+      place-items:center;
+    }
+    .bigBtn .lbl{ font-weight:1000; }
+    .bigBtn .hint{ font-size:11px; opacity:.8; margin-top:2px; font-weight:900; }
+
+    .sideCol{ display:flex; flex-direction:column; gap:10px; }
+    .midBtn{
+      width: clamp(86px, 18vw, 110px);
+      height: clamp(44px, 9vw, 56px);
+      border-radius: 18px;
+      font-size: 12px;
+      padding: 0;
+      display:grid;
+      place-items:center;
+    }
+
+    @media (pointer: coarse){
+      .touchbar{ display:block; }
+      body{ padding-bottom: 180px; }
+    }
+  </style>
+</head>
+
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>🧡 AsteriaMon – Mobile Koop Ultimate</h1>
+      <div class="sub">2 Smartphones im selben Abenteuer • <b>Joystick + große Buttons</b> • <b>echte Koop-Kämpfe</b> (Host + Guest) • Speicherbar</div>
+    </div>
+    <div class="btnbar">
+      <button class="primary" id="btnSave">Save</button>
+      <button id="btnLoad">Load</button>
+      <button class="danger" id="btnReset">Reset</button>
+      <button id="btnHelp">Controls</button>
+    </div>
+  </header>
+
+  <div class="row">
+    <div class="card">
+      <div class="hd">
+        <b>Abenteuer</b>
+        <span class="pill"><span class="dot" id="connDot"></span><span id="statusPill">Offline</span></span>
+      </div>
+      <div class="bd">
+        <canvas id="game" width="960" height="540"></canvas>
+        <div class="small" style="margin-top:10px">
+          🌿 Gras = Begegnungen (Host). 👋 A = reden. 🛡️ Trainer Kael startet <b>Koop-Kampf</b>, wenn ein Gast verbunden ist.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="hd"><b>Multiplayer & Infos</b></div>
+      <div class="bd">
+        <div class="kv" id="info"></div>
+
+        <div class="hr"></div>
+
+        <div class="small"><b>Multiplayer</b></div>
+        <div class="btnbar" style="margin-top:8px">
+          <button class="primary" id="btnHost">Host (Room)</button>
+          <button class="ok" id="btnJoin">Join</button>
+          <button class="ghost" id="btnDisconnect">Disconnect</button>
+        </div>
+
+        <div class="small" style="margin-top:10px">
+          <div><b>Room Code:</b> <span class="mono" id="roomCode">—</span></div>
+          <div style="margin-top:8px"><b>Code einfügen (Gerät 2):</b></div>
+          <input id="joinCode" class="mono" placeholder="Host-Code hier einfügen…" />
+          <div class="small" style="margin-top:8px">Tipp: GitHub Pages (HTTPS) + WLAN ist am zuverlässigsten.</div>
+        </div>
+
+        <div class="hr"></div>
+        <div class="btnbar">
+          <button id="btnBag">Bag</button>
+          <button id="btnParty">Party</button>
+        </div>
+
+        <div class="hr"></div>
+        <div class="log" id="log"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Touch Controls -->
+<div class="touchbar" aria-label="Touch controls">
+  <div class="inner">
+    <div class="joyWrap">
+      <div class="joyBase" id="joyBase">
+        <div class="joyRing"></div>
+        <div class="joyKnob" id="joyKnob"></div>
+      </div>
+      <div class="small" style="text-align:center; margin-top:8px; font-weight:900; opacity:.9">Joystick</div>
+    </div>
+
+    <div class="actionStack">
+      <button class="bigBtn primary" data-press="KeyE">
+        <div>
+          <div class="lbl">A</div>
+          <div class="hint">Interagieren</div>
+        </div>
+      </button>
+
+      <div class="sideCol">
+        <button class="midBtn" data-press="KeyB">B / Zurück</button>
+        <button class="midBtn ghost" data-press="KeyP">Party</button>
+        <button class="midBtn ghost" data-press="KeyI">Bag</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Overlay Modal -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="mh">
+      <b id="modalTitle">Modal</b>
+      <button id="modalClose">Close</button>
+    </div>
+    <div class="mb" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ========= Kid-friendly original content (no Pokémon IP) =========
+  const SPECIES = {
+    Sproutle: { name:"Sproutle", type:"Leaf", baseHP:22, baseATK:9, baseDEF:8, color:"#62d96b" },
+    Emberkit: { name:"Emberkit", type:"Fire", baseHP:20, baseATK:10, baseDEF:7, color:"#ff7a5d" },
+    Glimmfin: { name:"Glimmfin", type:"Aqua", baseHP:21, baseATK:9, baseDEF:8, color:"#5dd6ff" },
+    Stonepup: { name:"Stonepup", type:"Rock", baseHP:24, baseATK:8, baseDEF:10, color:"#c7b299" },
+    Buzzlet:  { name:"Buzzlet", type:"Spark", baseHP:18, baseATK:11, baseDEF:6, color:"#ffd35d" },
+    Shadeowl: { name:"Shadeowl", type:"Shadow", baseHP:19, baseATK:10, baseDEF:7, color:"#b57dff" },
+  };
+
+  const MOVES = {
+    Tackle:     { name:"Tackle", power:8,  type:"Neutral", acc:0.95 },
+    LeafCut:    { name:"LeafCut", power:10, type:"Leaf", acc:0.92 },
+    Ember:      { name:"Ember", power:10, type:"Fire", acc:0.92 },
+    SplashBolt: { name:"SplashBolt", power:10, type:"Aqua", acc:0.92 },
+    PebbleHit:  { name:"PebbleHit", power:9,  type:"Rock", acc:0.93 },
+    ZapNibble:  { name:"ZapNibble", power:11, type:"Spark", acc:0.88 },
+    NightPeck:  { name:"NightPeck", power:11, type:"Shadow", acc:0.88 },
+  };
+
+  const TYPE_MULT = {
+    Leaf:{Aqua:1.3,Rock:1.2,Fire:0.7,Leaf:0.9,Shadow:1,Spark:1,Neutral:1},
+    Fire:{Leaf:1.3,Rock:0.7,Aqua:0.7,Fire:0.9,Shadow:1,Spark:1,Neutral:1},
+    Aqua:{Fire:1.3,Rock:1.2,Leaf:0.7,Aqua:0.9,Shadow:1,Spark:0.8,Neutral:1},
+    Rock:{Fire:1.2,Spark:1.1,Leaf:0.8,Aqua:0.8,Rock:0.9,Shadow:1,Neutral:1},
+    Spark:{Aqua:1.2,Shadow:1,Leaf:1,Fire:1,Rock:0.9,Spark:0.9,Neutral:1},
+    Shadow:{Leaf:1,Fire:1,Aqua:1,Rock:1,Spark:1,Shadow:0.9,Neutral:1},
+    Neutral:{Leaf:1,Fire:1,Aqua:1,Rock:1,Spark:1,Shadow:1,Neutral:1},
+  };
+
+  const ITEMS = {
+    Potion: { name:"Potion", heal:12 },
+    SuperPotion: { name:"Super Potion", heal:22 },
+    CaptureOrb: { name:"Capture Orb", catchBoost:1.0 },
+    SuperOrb: { name:"Super Orb", catchBoost:1.35 },
+  };
+
+  // ========= Map =========
+  const MAP_W=48, MAP_H=28, TILE=32;
+  const map = (() => {
+    const g = Array.from({length:MAP_H}, () => Array.from({length:MAP_W}, () => 0));
+    for (let y=0;y<MAP_H;y++){ for(let x=0;x<MAP_W;x++){
+      if (x===0||y===0||x===MAP_W-1||y===MAP_H-1) g[y][x]=1;
+    }}
+    for (let x=6;x<20;x++) g[8][x]=1;
+    for (let y=8;y<16;y++) g[y][6]=1, g[y][19]=1;
+    g[16][6]=1; g[16][19]=1;
+    g[8][12]=0;
+    for (let y=18;y<26;y++) for (let x=8;x<40;x++) if ((x+y)%2===0) g[y][x]=2;
+    for (let y=20;y<24;y++) for (let x=4;x<8;x++) g[y][x]=3;
+    return g;
+  })();
+
+  // ========= Helpers =========
+  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+  function randId(){ return Math.random().toString(16).slice(2)+"-"+Math.random().toString(16).slice(2); }
+  function defaultMovesFor(id){
+    switch(id){
+      case "Sproutle": return ["Tackle","LeafCut"];
+      case "Emberkit": return ["Tackle","Ember"];
+      case "Glimmfin": return ["Tackle","SplashBolt"];
+      case "Stonepup": return ["Tackle","PebbleHit"];
+      case "Buzzlet":  return ["Tackle","ZapNibble"];
+      case "Shadeowl": return ["Tackle","NightPeck"];
+      default: return ["Tackle"];
+    }
+  }
+  function makeMon(speciesId, level=5){
+    const s = SPECIES[speciesId];
+    const hp = s.baseHP + level*2;
+    return {
+      id: randId(),
+      speciesId, name:s.name, type:s.type, level,
+      maxHP: hp, hp: hp,
+      atk: s.baseATK + Math.floor(level*1.2),
+      def: s.baseDEF + Math.floor(level*1.0),
+      moves: defaultMovesFor(speciesId),
+    };
+  }
+  function cloneMon(m){ return JSON.parse(JSON.stringify(m)); }
+
+  function sanitizeMon(m){
+    try{
+      if(!m || !m.speciesId || !SPECIES[m.speciesId]) return null;
+      const base = makeMon(m.speciesId, clamp(m.level||5,1,99));
+      base.hp = clamp(m.hp ?? base.hp, 0, base.maxHP);
+      return { ...base, id: m.id || base.id };
+    }catch{ return null; }
+  }
+  function sanitizeParty(arr){
+    if(!Array.isArray(arr)) return null;
+    const out = arr.map(sanitizeMon).filter(Boolean).slice(0,6);
+    return out.length ? out : null;
+  }
+
+  // ========= NPCs =========
+  const NPCS = [
+    { id:"elder", x:10, y:12, kind:"talk", name:"Elder Mira",
+      text:[
+        "Hallo Abenteurer! 👋",
+        "Joystick unten links bewegen dich.",
+        "Mit A sprichst du mit Leuten.",
+        "Wenn ihr verbunden seid, könnt ihr zusammen kämpfen!"
+      ]},
+    { id:"kael", x:14, y:12, kind:"trainer", name:"Trainer Kael",
+      text:[ "Hey! Lust auf ein Match?", "Wenn ihr verbunden seid: Co-op!" ],
+      trainerTeam:[ makeMon("Stonepup", 6), makeMon("Buzzlet", 6) ]
+    },
+  ];
+
+  // ========= Save State =========
+  const SAVE_KEY="asteriamon_mobile_koop_ultimate_v1";
+  const state = {
+    mode:"overworld",  // overworld | battle | dialog | menu
+    role:"offline",    // offline | host | guest
+    roomCode:null,
+    connected:false,
+
+    player1:{ x:12, y:15, dir:"down", color:"#5dd6ff", name:"P1" }, // host
+    player2:{ x:13, y:15, dir:"down", color:"#ffd35d", name:"P2" }, // guest
+
+    coins: 120,
+    bag: { Potion:3, SuperPotion:1, CaptureOrb:6, SuperOrb:1 },
+
+    party1: [ makeMon("Sproutle", 6), makeMon("Glimmfin", 5), makeMon("Shadeowl", 5) ],
+    party2: [ makeMon("Emberkit", 6), makeMon("Buzzlet", 5), makeMon("Stonepup", 5) ],
+
+    battle: null, // host-authoritative battle object
+  };
+
+  // ========= UI =========
+  const $ = (s)=>document.querySelector(s);
+  const logEl=$("#log");
+  const infoEl=$("#info");
+  const statusEl=$("#statusPill");
+  const dotEl=$("#connDot");
+  const roomCodeEl=$("#roomCode");
+
+  const overlay=$("#overlay");
+  const modalTitle=$("#modalTitle");
+  const modalBody=$("#modalBody");
+  let modalLockClose=false;
+
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function log(msg, strong=false){
+    const d=document.createElement("div");
+    d.innerHTML = strong ? `<strong>${escapeHtml(msg)}</strong>` : escapeHtml(msg);
+    logEl.prepend(d);
+  }
+  function setStatus(text, connected=false){
+    statusEl.textContent=text;
+    dotEl.classList.toggle("on", !!connected);
+  }
+  function openModal(title, bodyEl, opts={}){
+    modalTitle.textContent=title;
+    modalBody.innerHTML="";
+    modalBody.appendChild(bodyEl);
+    modalLockClose=!!opts.lockClose;
+    overlay.classList.add("show");
+  }
+  function closeModal(force=false){
+    if(modalLockClose && !force) return;
+    overlay.classList.remove("show");
+    modalBody.innerHTML="";
+    modalLockClose=false;
+  }
+  $("#modalClose").onclick=()=>closeModal();
+  overlay.addEventListener("click",(e)=>{ if(e.target===overlay) closeModal(); });
+
+  function renderInfo(){
+    const p1=state.party1[0], p2=state.party2[0];
+    infoEl.innerHTML = `
+      <b>Role</b><div>${state.role}</div>
+      <b>Connected</b><div>${state.connected?"yes":"no"}</div>
+      <b>Coins</b><div>${state.coins}</div>
+      <b>P1</b><div>${p1.name} Lv ${p1.level} • HP ${p1.hp}/${p1.maxHP}</div>
+      <b>P2</b><div>${p2.name} Lv ${p2.level} • HP ${p2.hp}/${p2.maxHP}</div>
+    `;
+    roomCodeEl.textContent = state.roomCode || "—";
+  }
+
+  // ========= Save/Load =========
+  function save(){
+    const snapshot = structuredClone(state);
+    // don't persist live networking objects
+    snapshot.role = "offline";
+    snapshot.connected = false;
+    snapshot.roomCode = null;
+    localStorage.setItem(SAVE_KEY, JSON.stringify(snapshot));
+    log("Gespeichert ✅", true);
+  }
+  function load(){
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(!raw){ log("Kein Speicherstand gefunden."); return; }
+    const data = JSON.parse(raw);
+    // keep current network status
+    const role=state.role, connected=state.connected, roomCode=state.roomCode;
+    Object.assign(state, data);
+    state.role=role; state.connected=connected; state.roomCode=roomCode;
+    state.mode="overworld";
+    state.battle=null;
+    renderInfo();
+    log("Geladen ✅", true);
+  }
+  function reset(){
+    localStorage.removeItem(SAVE_KEY);
+    location.reload();
+  }
+
+  // ========= Keyboard + virtual press buttons =========
+  const keys=new Set();
+  window.addEventListener("keydown",(e)=>{
+    keys.add(e.code);
+    if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code)) e.preventDefault();
+  }, {passive:false});
+  window.addEventListener("keyup",(e)=>keys.delete(e.code));
+
+  // "press" buttons: tap = quick press (down+up)
+  document.querySelectorAll("[data-press]").forEach(btn=>{
+    const code=btn.getAttribute("data-press");
+    const press = ()=>{
+      keys.add(code);
+      setTimeout(()=>keys.delete(code), 80);
+    };
+    btn.addEventListener("pointerdown",(e)=>{ e.preventDefault(); press(); });
+  });
+
+  const pressed=new Set();
+  function consumePress(code){
+    if(keys.has(code) && !pressed.has(code)){ pressed.add(code); return true; }
+    if(!keys.has(code) && pressed.has(code)) pressed.delete(code);
+    return false;
+  }
+
+  // ========= Joystick -> direction =========
+  const joyBase = $("#joyBase");
+  const joyKnob = $("#joyKnob");
+  let joyActive=false, joyId=null;
+  let joyCenter={x:0,y:0};
+  let joyVec={x:0,y:0}; // -1..1
+  const DEADZONE=0.20;
+
+  function setKnob(nx, ny){
+    // nx/ny in [-1,1]
+    const baseRect = joyBase.getBoundingClientRect();
+    const max = (Math.min(baseRect.width, baseRect.height) / 2) - (joyKnob.getBoundingClientRect().width/2) - 10;
+    const px = nx*max;
+    const py = ny*max;
+    joyKnob.style.transform = `translate(calc(-50% + ${px}px), calc(-50% + ${py}px))`;
+  }
+  function joyReset(){
+    joyVec={x:0,y:0};
+    setKnob(0,0);
+  }
+  function joyUpdateFromPointer(e){
+    const rect = joyBase.getBoundingClientRect();
+    const cx = rect.left + rect.width/2;
+    const cy = rect.top + rect.height/2;
+    const dx = e.clientX - cx;
+    const dy = e.clientY - cy;
+    const max = rect.width/2 - 14;
+    const nx = clamp(dx / max, -1, 1);
+    const ny = clamp(dy / max, -1, 1);
+    const mag = Math.hypot(nx, ny);
+    if(mag > 1){
+      joyVec = {x: nx/mag, y: ny/mag};
+    } else {
+      joyVec = {x: nx, y: ny};
+    }
+    setKnob(joyVec.x, joyVec.y);
+  }
+
+  joyBase.addEventListener("pointerdown",(e)=>{
+    e.preventDefault();
+    joyActive=true; joyId=e.pointerId;
+    joyBase.setPointerCapture(e.pointerId);
+    joyUpdateFromPointer(e);
+  });
+  joyBase.addEventListener("pointermove",(e)=>{
+    if(!joyActive || e.pointerId!==joyId) return;
+    joyUpdateFromPointer(e);
+  });
+  joyBase.addEventListener("pointerup",(e)=>{
+    if(e.pointerId!==joyId) return;
+    joyActive=false; joyId=null;
+    joyReset();
+  });
+  joyBase.addEventListener("pointercancel",()=>{
+    joyActive=false; joyId=null;
+    joyReset();
+  });
+
+  function joyToDir(){
+    const x=joyVec.x, y=joyVec.y;
+    const mag = Math.hypot(x,y);
+    if(mag < DEADZONE) return {dx:0, dy:0};
+    // grid movement: dominant axis
+    if(Math.abs(x) > Math.abs(y)) return {dx: x>0?1:-1, dy:0};
+    return {dx:0, dy: y>0?1:-1};
+  }
+
+  // ========= World =========
+  function isBlocked(x,y){
+    if(x<0||y<0||x>=MAP_W||y>=MAP_H) return true;
+    const t = map[y][x];
+    return t===1 || t===3;
+  }
+  function tileAt(x,y){
+    if(x<0||y<0||x>=MAP_W||y>=MAP_H) return 1;
+    return map[y][x];
+  }
+  function dirFrom(dx,dy){
+    if(dx===1) return "right";
+    if(dx===-1) return "left";
+    if(dy===1) return "down";
+    if(dy===-1) return "up";
+    return "down";
+  }
+  function moveWithDir(p, dx, dy){
+    p.dir = dirFrom(dx,dy);
+    const nx=p.x+dx, ny=p.y+dy;
+    if(!isBlocked(nx,ny)){ p.x=nx; p.y=ny; return true; }
+    return false;
+  }
+  function frontTile(p){
+    if(p.dir==="up") return {x:p.x, y:p.y-1};
+    if(p.dir==="down") return {x:p.x, y:p.y+1};
+    if(p.dir==="left") return {x:p.x-1, y:p.y};
+    return {x:p.x+1, y:p.y};
+  }
+  function npcAt(x,y){ return NPCS.find(n=>n.x===x && n.y===y); }
+
+  // ========= Multiplayer (PeerJS) =========
+  let peer=null, conn=null;
+  let lastNetTick=0;
+
+  function netSend(obj){
+    try{ if(conn && conn.open) conn.send(obj); }catch{}
+  }
+
+  function closeNet(){
+    try{ if(conn) conn.close(); }catch{}
+    try{ if(peer) peer.destroy(); }catch{}
+    peer=null; conn=null;
+    state.connected=false;
+    state.role="offline";
+    state.roomCode=null;
+    setStatus("Offline", false);
+    renderInfo();
+    log("Verbindung getrennt.", true);
+  }
+
+  function startHost(){
+    closeNet();
+    state.role="host";
+    setStatus("Room wird erstellt…", false);
+    renderInfo();
+
+    peer = new Peer();
+    peer.on("open",(id)=>{
+      state.roomCode=id;
+      setStatus("Host bereit", false);
+      renderInfo();
+      log("Room erstellt. Code: " + id, true);
+    });
+    peer.on("connection",(c)=>{
+      if(conn && conn.open){ c.close(); return; }
+      conn=c;
+      wireConnection(true);
+    });
+    peer.on("error",(e)=>{
+      log("Peer error: " + e.type, true);
+      setStatus("Host error", false);
+    });
+  }
+
+  function joinRoom(code){
+    closeNet();
+    state.role="guest";
+    setStatus("Verbinde…", false);
+    renderInfo();
+
+    peer = new Peer();
+    peer.on("open",(id)=>{
+      state.roomCode=id;
+      renderInfo();
+      conn = peer.connect(code, { reliable:true });
+      wireConnection(false);
+    });
+    peer.on("error",(e)=>{
+      log("Peer error: " + e.type, true);
+      setStatus("Guest error", false);
+    });
+  }
+
+  function wireConnection(isHostSide){
+    conn.on("open", ()=>{
+      state.connected=true;
+      setStatus(isHostSide ? "Verbunden (Host)" : "Verbunden (Guest)", true);
+      renderInfo();
+      log("Verbunden ✅", true);
+
+      // send our full party + bag counts (best effort) so host has correct data
+      netSend({
+        t:"sync",
+        from: state.role,
+        party: (state.role==="host" ? state.party1 : state.party2),
+        bag: state.bag,
+      });
+
+      if(state.role==="host"){
+        broadcastState(true);
+      }
+    });
+
+    conn.on("data",(msg)=>onNetMessage(msg));
+    conn.on("close", ()=> closeNet());
+    conn.on("error", ()=> closeNet());
+  }
+
+  function onNetMessage(msg){
+    if(!msg || typeof msg!=="object") return;
+
+    if(msg.t==="sync"){
+      const party = sanitizeParty(msg.party);
+      if(party){
+        if(state.role==="host" && msg.from==="guest"){
+          state.party2 = party;
+          log("Guest Party synchronisiert ✅", true);
+        }
+        if(state.role==="guest" && msg.from==="host"){
+          state.party1 = party;
+          log("Host Party synchronisiert ✅", true);
+        }
+      }
+      // bag: only informational in this demo; keep local bag as source of truth.
+      renderInfo();
+      return;
+    }
+
+    if(msg.t==="state" && state.role==="guest"){
+      if(msg.p1) Object.assign(state.player1, msg.p1);
+      if(msg.p2) Object.assign(state.player2, msg.p2);
+
+      if(msg.party1){
+        const p = sanitizeParty(msg.party1);
+        if(p) state.party1 = p;
+      }
+      if(msg.party2){
+        const p = sanitizeParty(msg.party2);
+        if(p) state.party2 = p;
+      }
+
+      if(msg.battle){
+        state.battle = msg.battle;
+        if(state.mode!=="battle"){
+          state.mode="battle";
+          openBattleUI({netControlled:true});
+        }
+      } else {
+        if(state.mode==="battle"){
+          closeModal(true);
+          state.mode="overworld";
+          state.battle=null;
+        }
+      }
+      return;
+    }
+
+    if(msg.t==="input" && state.role==="host"){
+      if(state.mode!=="overworld") return;
+      const dx=msg.dx||0, dy=msg.dy||0;
+      if(dx||dy) moveWithDir(state.player2, dx, dy);
+      if(msg.interact) interactAs(2);
+      return;
+    }
+
+    if(msg.t==="battleAction" && state.role==="host"){
+      if(!state.battle) return;
+      if(state.battle.turn!=="p2") return; // guest acts only on p2 turn
+      // apply guest choice
+      state.battle.p2Choice = msg.choice;
+      resolveTurnIfReady();
+      broadcastState(false);
+      return;
+    }
+  }
+
+  function broadcastState(force=false){
+    if(state.role!=="host" || !conn || !conn.open) return;
+    netSend({
+      t:"state",
+      p1: {x:state.player1.x, y:state.player1.y, dir:state.player1.dir},
+      p2: {x:state.player2.x, y:state.player2.y, dir:state.player2.dir},
+      party1: state.party1,
+      party2: state.party2,
+      battle: state.battle,
+      force: !!force
+    });
+  }
+
+  // ========= Dialog + Menus =========
+  function startDialog(title, lines){
+    state.mode="dialog";
+    const body=document.createElement("div");
+    body.innerHTML = `
+      <div class="small" style="margin-bottom:10px"><b>${escapeHtml(title)}</b></div>
+      ${lines.map(l=>`<div class="small" style="margin-bottom:8px">${escapeHtml(l)}</div>`).join("")}
+      <div class="hr"></div>
+      <div class="btnbar"><button class="primary" id="dlgOk">OK</button></div>
+    `;
+    openModal("Dialog", body);
+    body.querySelector("#dlgOk").onclick=()=>{ closeModal(); state.mode="overworld"; };
+  }
+
+  function showParty(){
+    const party = (state.role==="guest") ? state.party2 : state.party1;
+    const body=document.createElement("div");
+    body.innerHTML = `
+      <div class="small"><b>Deine Party</b></div>
+      <div class="hr"></div>
+      <div class="small">Tippe ein AsteriaMon an, um es als Begleiter (Lead) zu wählen.</div>
+      <div class="hr"></div>
+      <div class="btnbar" id="list"></div>
+    `;
+    const list=body.querySelector("#list");
+    party.forEach((m,idx)=>{
+      const b=document.createElement("button");
+      b.className = idx===0 ? "primary" : "";
+      b.textContent = `${m.name} Lv ${m.level} • HP ${m.hp}/${m.maxHP} • ${m.type}`;
+      b.onclick=()=>{
+        party.splice(idx,1); party.unshift(m);
+        renderInfo(); save(); closeModal();
+        log("Begleiter gewählt ✅", true);
+
+        if(state.connected){
+          netSend({
+            t:"sync",
+            from: state.role,
+            party: party,
+            bag: state.bag
+          });
+          if(state.role==="host") broadcastState(true);
+        }
+      };
+      list.appendChild(b);
+    });
+    openModal("Party", body);
+  }
+
+  function showBag(){
+    const body=document.createElement("div");
+    const entries = Object.entries(state.bag).sort((a,b)=>a[0].localeCompare(b[0]));
+    body.innerHTML = `
+      <div class="small"><b>Bag</b></div>
+      <div class="hr"></div>
+      <div class="small">${entries.map(([k,v])=>`${escapeHtml(ITEMS[k]?.name || k)}: <b>${v}</b>`).join("<br/>")}</div>
+      <div class="hr"></div>
+      <div class="small">Im Kampf kannst du Items nutzen (Potion heilt, Orbs fangen Wild-Monster).</div>
+    `;
+    openModal("Bag", body);
+  }
+
+  // ========= Interaction =========
+  function interactAs(playerIndex){
+    if(state.mode!=="overworld") return;
+    const p = playerIndex===1 ? state.player1 : state.player2;
+    const ft = frontTile(p);
+    const n = npcAt(ft.x, ft.y);
+    if(!n){ log((playerIndex===1?"P1":"P2")+": Nichts hier."); return; }
+
+    if(n.kind==="talk"){
+      startDialog(n.name, n.text);
+      if(state.role==="host") broadcastState(false);
+      return;
+    }
+    if(n.kind==="trainer"){
+      if(state.role!=="host"){
+        log("Nur der Host kann Trainer-Kämpfe starten.", true);
+        return;
+      }
+      showTrainerChoice(n);
+      return;
+    }
+  }
+
+  function showTrainerChoice(trainer){
+    state.mode="menu";
+    const canCoop = state.connected;
+    const body=document.createElement("div");
+    body.innerHTML = `
+      <div class="small"><b>${escapeHtml(trainer.name)}</b></div>
+      <div class="small" style="margin-top:6px">${escapeHtml(trainer.text[0])}</div>
+      <div class="small" style="margin-top:6px">${escapeHtml(trainer.text[1])}</div>
+      <div class="hr"></div>
+      <div class="btnbar">
+        <button class="primary" id="soloBtn">Solo</button>
+        <button class="ok" id="coopBtn" ${canCoop?"":"disabled"}>Co-op (2 Geräte)</button>
+        <button id="cancelBtn">Cancel</button>
+      </div>
+      <div class="small" style="margin-top:10px">Co-op nur, wenn ein Gast verbunden ist.</div>
+    `;
+    openModal("Trainer Battle", body);
+    body.querySelector("#soloBtn").onclick=()=>{ closeModal(); startTrainerBattle(trainer,false); };
+    body.querySelector("#coopBtn").onclick=()=>{ closeModal(); startTrainerBattle(trainer,true); };
+    body.querySelector("#cancelBtn").onclick=()=>{ closeModal(); state.mode="overworld"; };
+  }
+
+  // ========= Battles (Host authoritative, synced) =========
+  function startTrainerBattle(trainer, coop){
+    if(state.role!=="host") return;
+    const team = trainer.trainerTeam.map(m=>({ ...cloneMon(m), id: randId() }));
+    const battle = {
+      kind:"trainer",
+      coop: !!coop,
+      trainerName: trainer.name,
+      trainerTeam: team,
+      enemy: { ...team[0] },
+      turn: "p1", // p1 -> p2 (if coop) -> enemy
+      msg: "Wähle eine Aktion.",
+      p1Choice: null,
+      p2Choice: null,
+    };
+    state.battle = battle;
+    state.mode = "battle";
+    log(`${trainer.name} fordert euch heraus!`, true);
+    openBattleUI({netControlled:false});
+    broadcastState(true);
+  }
+
+  function startWildBattle(){
+    if(state.role!=="host") return;
+    const pool = ["Sproutle","Emberkit","Glimmfin","Stonepup","Buzzlet","Shadeowl"];
+    const pick = pool[Math.floor(Math.random()*pool.length)];
+    const lvl = 4 + Math.floor(Math.random()*5);
+    const enemy = makeMon(pick, lvl);
+    const battle = {
+      kind:"wild",
+      coop:false,
+      trainerName:null,
+      trainerTeam:null,
+      enemy,
+      turn:"p1",
+      msg:"Ein wildes AsteriaMon erscheint!",
+      p1Choice:null,
+      p2Choice:null,
+    };
+    state.battle=battle;
+    state.mode="battle";
+    log(`Ein wildes ${enemy.name} erscheint!`, true);
+    openBattleUI({netControlled:false});
+    broadcastState(true);
+  }
+
+  function endBattle(success){
+    closeModal(true);
+    state.mode="overworld";
+    state.battle=null;
+    broadcastState(true);
+    save(); // auto-save
+    log(success ? "Kampf beendet ✅" : "Ihr wurdet besiegt…", true);
+  }
+
+  function dmgCalc(attacker, defender, mv){
+    const hit = Math.random() < mv.acc;
+    if(!hit) return {hit:false, dmg:0, mult:1};
+    const mult = (TYPE_MULT[mv.type] && TYPE_MULT[mv.type][defender.type]) ? TYPE_MULT[mv.type][defender.type] : 1;
+    const base = mv.power + Math.floor(attacker.atk*0.6) - Math.floor(defender.def*0.35);
+    const dmg = Math.max(1, Math.floor(base * mult * (0.85 + Math.random()*0.3)));
+    return {hit:true, dmg, mult};
+  }
+
+  function applyChoice(who, choice){
+    const b=state.battle;
+    if(!b) return;
+
+    if(!choice) return;
+
+    if(choice.kind==="move"){
+      const attacker = who==="p1" ? state.party1[0] : state.party2[0];
+      const e = b.enemy;
+      const mv = MOVES[choice.id] || MOVES.Tackle;
+      const r = dmgCalc(attacker, e, mv);
+      if(!r.hit){
+        b.msg = `${attacker.name} nutzt ${mv.name}… verfehlt!`;
+        return;
+      }
+      e.hp = Math.max(0, e.hp - r.dmg);
+      b.msg = `${attacker.name} nutzt ${mv.name} • ${r.dmg} Schaden` + (r.mult>1.05 ? " (Super!)" : r.mult<0.95 ? " (Schwach…)" : "");
+      return;
+    }
+
+    if(choice.kind==="item"){
+      const itemId = choice.id;
+      const item = ITEMS[itemId];
+      if(!item){ b.msg="Item existiert nicht."; return; }
+      if((state.bag[itemId]||0) <= 0){ b.msg="Nicht genug Items."; return; }
+
+      // consume
+      state.bag[itemId] = Math.max(0, (state.bag[itemId]||0) - 1);
+
+      if(item.heal){
+        const target = who==="p1" ? state.party1[0] : state.party2[0];
+        const before = target.hp;
+        target.hp = Math.min(target.maxHP, target.hp + item.heal);
+        const gain = target.hp - before;
+        b.msg = `${target.name} wird geheilt (+${gain}) ✨`;
+        return;
+      }
+
+      // capture orbs only in wild battles
+      if(item.catchBoost && b.kind==="wild"){
+        const e = b.enemy;
+        const hpFactor = 1 - (e.hp / e.maxHP);
+        const baseChance = 0.18 + hpFactor*0.55; // 18%..73% depending on HP
+        const chance = Math.min(0.92, baseChance * item.catchBoost);
+        const roll = Math.random();
+        if(roll < chance){
+          b.msg = `Gefangen! 🎉 ${e.name} kommt in die Party.`;
+          // add to host player's party (p1)
+          const targetParty = state.party1;
+          if(targetParty.length < 6){
+            targetParty.push({ ...e, id: randId() });
+          }
+          // reward
+          state.coins += 20;
+          endBattle(true);
+        } else {
+          b.msg = `Oh nein! ${e.name} ist entkommen…`;
+        }
+        return;
+      }
+
+      b.msg = "Dieses Item kann hier nicht benutzt werden.";
+      return;
+    }
+
+    if(choice.kind==="run"){
+      if(b.kind==="wild"){
+        b.msg="Ihr rennt weg!";
+        endBattle(true);
+      } else {
+        b.msg="Du kannst vor Trainer-Kämpfen nicht fliehen!";
+      }
+      return;
+    }
+
+    if(choice.kind==="switch"){
+      const idx = clamp(choice.idx ?? 0, 0, 5);
+      const party = who==="p1" ? state.party1 : state.party2;
+      if(!party[idx]){ b.msg="Geht nicht."; return; }
+      if(party[idx].hp<=0){ b.msg="Dieses AsteriaMon ist K.O."; return; }
+      const mon = party[idx];
+      party.splice(idx,1);
+      party.unshift(mon);
+      b.msg = `${mon.name}, los geht’s!`;
+      return;
+    }
+  }
+
+  function enemyAct(){
+    const b=state.battle;
+    if(!b) return;
+    const e=b.enemy;
+    const mvId = e.moves[Math.floor(Math.random()*e.moves.length)];
+    const mv = MOVES[mvId] || MOVES.Tackle;
+    const target = b.coop ? (Math.random()<0.5 ? state.party1[0] : state.party2[0]) : state.party1[0];
+
+    const r = dmgCalc(e, target, mv);
+    if(!r.hit){
+      b.msg = `${e.name} nutzt ${mv.name}… verfehlt!`;
+      return;
+    }
+    target.hp = Math.max(0, target.hp - r.dmg);
+    b.msg = `${e.name} nutzt ${mv.name} gegen ${target.name} • ${r.dmg} Schaden`;
+  }
+
+  function checkEnd(){
+    const b=state.battle;
+    if(!b) return true;
+
+    const e=b.enemy;
+    const p1=state.party1[0];
+    const p2=state.party2[0];
+
+    // enemy defeated
+    if(e.hp<=0){
+      if(b.kind==="wild"){
+        b.msg = `${e.name} ist K.O.!`;
+        // reward
+        state.coins += 15;
+        endBattle(true);
+        return true;
+      }
+      const team=b.trainerTeam;
+      const idx = team.findIndex(m=>m.id===e.id);
+      const next = idx+1;
+      if(next < team.length){
+        b.enemy = { ...team[next] };
+        b.msg = `${e.name} ist K.O.! Nächstes AsteriaMon!`;
+        return false;
+      }
+      b.msg = `Ihr gewinnt gegen ${b.trainerName}! 🎉`;
+      state.coins += 70;
+      endBattle(true);
+      return true;
+    }
+
+    // players defeated
+    const p1alive = p1.hp>0;
+    const p2alive = b.coop ? (p2.hp>0) : true;
+    if(!p1alive && !p2alive){
+      endBattle(false);
+      return true;
+    }
+    return false;
+  }
+
+  function advanceTurn(){
+    const b=state.battle;
+    if(!b) return;
+
+    if(b.coop){
+      b.turn = (b.turn==="p1") ? "p2" : (b.turn==="p2") ? "enemy" : "p1";
+    } else {
+      b.turn = (b.turn==="p1") ? "enemy" : "p1";
+    }
+    b.msg = "Wähle eine Aktion.";
+
+    if(b.turn==="enemy"){
+      b.msg = `${b.enemy.name} ist dran…`;
+      setTimeout(()=>{
+        if(state.role==="host"){
+          enemyAct();
+          if(!checkEnd()){
+            b.turn = b.coop ? "p1" : "p1";
+            b.msg = "Wähle eine Aktion.";
+            broadcastState(false);
+          }
+        }
+      }, 260);
+    }
+  }
+
+  function resolveTurnIfReady(){
+    const b=state.battle;
+    if(!b) return;
+
+    if(b.turn==="p1" && !b.p1Choice) return;
+    if(b.coop && b.turn==="p2" && !b.p2Choice) return;
+
+    if(b.turn==="p1"){
+      applyChoice("p1", b.p1Choice);
+      b.p1Choice=null;
+      if(!checkEnd()) advanceTurn();
+      return;
+    }
+    if(b.turn==="p2"){
+      applyChoice("p2", b.p2Choice);
+      b.p2Choice=null;
+      if(!checkEnd()) advanceTurn();
+      return;
+    }
+  }
+
+  // ========= Battle UI =========
+  function openBattleUI({netControlled}){
+    const b = state.battle;
+    if(!b) return;
+
+    const body=document.createElement("div");
+    body.innerHTML = `
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+        <div class="card" style="border-radius:14px">
+          <div class="hd"><b>${b.kind==="wild" ? "Wildes AsteriaMon" : "Trainer-Kampf"}</b></div>
+          <div class="bd">
+            <div class="small">
+              <b>Gegner:</b> <span class="mono" id="eName">${escapeHtml(b.enemy.name)}</span> Lv <span class="mono" id="eLv">${b.enemy.level}</span> • ${escapeHtml(b.enemy.type)}<br/>
+              <b>HP:</b> <span class="mono" id="eHp">${b.enemy.hp}</span>/<span class="mono" id="eMax">${b.enemy.maxHP}</span>
+            </div>
+            <div class="hr"></div>
+            <div class="small" id="bMsg" style="font-weight:900">${escapeHtml(b.msg||"")}</div>
+          </div>
+        </div>
+
+        <div class="card" style="border-radius:14px">
+          <div class="hd"><b>Eure Seite</b></div>
+          <div class="bd">
+            <div class="small"><b>P1:</b> <span class="mono" id="p1Name">${escapeHtml(state.party1[0].name)}</span> • HP <span class="mono" id="p1Hp">${state.party1[0].hp}</span>/<span class="mono" id="p1Max">${state.party1[0].maxHP}</span></div>
+            <div class="small" style="margin-top:8px"><b>P2:</b> ${b.coop ? `<span class="mono" id="p2Name">${escapeHtml(state.party2[0].name)}</span> • HP <span class="mono" id="p2Hp">${state.party2[0].hp}</span>/<span class="mono" id="p2Max">${state.party2[0].maxHP}</span>` : "—"}</div>
+            <div class="hr"></div>
+            <div class="small"><b>Turn:</b> <span class="mono" id="turnLbl">${b.turn}</span> • <b>Role:</b> <span class="mono">${state.role}</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="btnbar" id="tabs">
+        <button class="primary" id="tabMoves">Moves</button>
+        <button id="tabItems">Items</button>
+        <button id="tabSwitch">Switch</button>
+        <button class="ghost" id="tabRun">${b.kind==="wild" ? "Run" : "No Run"}</button>
+      </div>
+
+      <div style="height:10px"></div>
+      <div class="btnbar" id="actionBar"></div>
+
+      <div class="small" style="margin-top:10px">
+        Host steuert P1. Gast steuert P2 (nur im Co-op).
+      </div>
+    `;
+    openModal("Battle", body, {lockClose:true});
+
+    let activeTab="moves";
+    const tabMoves=body.querySelector("#tabMoves");
+    const tabItems=body.querySelector("#tabItems");
+    const tabSwitch=body.querySelector("#tabSwitch");
+    const tabRun=body.querySelector("#tabRun");
+
+    tabMoves.onclick=()=>{ activeTab="moves"; renderActions(); };
+    tabItems.onclick=()=>{ activeTab="items"; renderActions(); };
+    tabSwitch.onclick=()=>{ activeTab="switch"; renderActions(); };
+    tabRun.onclick=()=>{
+      if(!state.battle) return;
+      if(state.role!=="host" && state.role!=="guest") return;
+      // Only the current actor can run; in coop only p1/p2 turns
+      const whoCanAct = whoActing();
+      if(!whoCanAct){ return; }
+      // host resolves; guest sends if it's p2 turn
+      const choice = {kind:"run"};
+      if(state.role==="host"){
+        if(whoCanAct==="p1"){ state.battle.p1Choice = choice; resolveTurnIfReady(); broadcastState(false); }
+        else { /* host waiting */ }
+      } else {
+        // guest can only act on p2 turn
+        netSend({t:"battleAction", choice});
+      }
+      renderActions();
+    };
+
+    function whoActing(){
+      const bb=state.battle;
+      if(!bb) return null;
+      if(bb.turn==="p1") return "p1";
+      if(bb.turn==="p2") return "p2";
+      return null;
+    }
+
+    function canLocalAct(){
+      const bb=state.battle;
+      if(!bb) return false;
+      if(bb.turn==="p1") return state.role==="host";
+      if(bb.turn==="p2") return bb.coop && state.role==="guest";
+      return false;
+    }
+
+    function setTabStyles(){
+      const all=[tabMoves,tabItems,tabSwitch];
+      all.forEach(b=>b.classList.remove("primary"));
+      if(activeTab==="moves") tabMoves.classList.add("primary");
+      if(activeTab==="items") tabItems.classList.add("primary");
+      if(activeTab==="switch") tabSwitch.classList.add("primary");
+      tabRun.disabled = !(state.battle && state.battle.kind==="wild");
+    }
+
+    function makeChoice(choice){
+      const bb=state.battle;
+      if(!bb) return;
+
+      if(!canLocalAct()){
+        // show friendly feedback
+        bb.msg = bb.turn==="enemy" ? "Der Gegner ist dran…" : "Warte…";
+        return;
+      }
+      if(state.role==="host"){
+        bb.p1Choice = choice;
+        resolveTurnIfReady();
+        broadcastState(false);
+      } else {
+        netSend({t:"battleAction", choice});
+        bb.msg = "Aktion gewählt…";
+      }
+    }
+
+    function renderActions(){
+      const bb=state.battle;
+      if(!bb) return;
+
+      setTabStyles();
+
+      // refresh labels
+      body.querySelector("#eName").textContent = bb.enemy.name;
+      body.querySelector("#eLv").textContent = bb.enemy.level;
+      body.querySelector("#eHp").textContent = bb.enemy.hp;
+      body.querySelector("#eMax").textContent = bb.enemy.maxHP;
+
+      body.querySelector("#p1Name").textContent = state.party1[0].name;
+      body.querySelector("#p1Hp").textContent = state.party1[0].hp;
+      body.querySelector("#p1Max").textContent = state.party1[0].maxHP;
+
+      const p2Name=body.querySelector("#p2Name");
+      if(p2Name){
+        p2Name.textContent = state.party2[0].name;
+        body.querySelector("#p2Hp").textContent = state.party2[0].hp;
+        body.querySelector("#p2Max").textContent = state.party2[0].maxHP;
+      }
+
+      body.querySelector("#turnLbl").textContent = bb.turn;
+      body.querySelector("#bMsg").textContent = bb.msg || "Wähle eine Aktion.";
+
+      const bar=body.querySelector("#actionBar");
+      bar.innerHTML="";
+
+      // waiting text
+      if(!canLocalAct()){
+        const d=document.createElement("div");
+        d.className="small";
+        if(bb.turn==="p1") d.textContent="Warte auf Host (P1)…";
+        else if(bb.turn==="p2") d.textContent="Warte auf Guest (P2)…";
+        else d.textContent="Gegner ist dran…";
+        bar.appendChild(d);
+        return;
+      }
+
+      const actor = (bb.turn==="p1") ? state.party1[0] : state.party2[0];
+
+      if(activeTab==="moves"){
+        actor.moves.forEach(mid=>{
+          const mv=MOVES[mid];
+          const btn=document.createElement("button");
+          btn.className="primary";
+          btn.textContent = `${mv.name} • ${mv.type} • Pow ${mv.power}`;
+          btn.onclick=()=>makeChoice({kind:"move", id: mid});
+          bar.appendChild(btn);
+        });
+        return;
+      }
+
+      if(activeTab==="items"){
+        const entries = Object.entries(state.bag).filter(([k,v])=>v>0);
+        if(!entries.length){
+          const d=document.createElement("div");
+          d.className="small";
+          d.textContent="Keine Items übrig.";
+          bar.appendChild(d);
+          return;
+        }
+        entries.forEach(([id,count])=>{
+          const it=ITEMS[id];
+          const btn=document.createElement("button");
+          btn.textContent = `${it?.name || id} ×${count}` + (it?.heal ? ` (Heal ${it.heal})` : it?.catchBoost ? " (Catch)" : "");
+          btn.onclick=()=>makeChoice({kind:"item", id});
+          // disable capture items in trainer battles
+          if(it?.catchBoost && bb.kind!=="wild") btn.disabled=true;
+          bar.appendChild(btn);
+        });
+        return;
+      }
+
+      if(activeTab==="switch"){
+        const party = (bb.turn==="p1") ? state.party1 : state.party2;
+        party.forEach((m,idx)=>{
+          const btn=document.createElement("button");
+          btn.textContent = `${idx===0?"★ ":""}${m.name} Lv ${m.level} • HP ${m.hp}/${m.maxHP}`;
+          if(idx===0) btn.className="primary";
+          if(m.hp<=0) btn.disabled=true;
+          btn.onclick=()=>makeChoice({kind:"switch", idx});
+          bar.appendChild(btn);
+        });
+        return;
+      }
+    }
+
+    // live refresh while modal open
+    const iv=setInterval(()=>{
+      if(!overlay.classList.contains("show") || state.mode!=="battle"){
+        clearInterval(iv);
+        return;
+      }
+      renderActions();
+    }, 140);
+
+    renderActions();
+  }
+
+  // ========= Main Loop =========
+  let lastMoveAt=0;
+  const MOVE_COOLDOWN_MS = 140; // speed for joystick
+
+  function handleInput(){
+    // global shortcuts
+    if(consumePress("KeyB")){
+      // close non-locked modals or ignore
+      closeModal();
+      if(state.mode!=="battle") state.mode="overworld";
+    }
+    if(consumePress("KeyP")) showParty();
+    if(consumePress("KeyI")) showBag();
+
+    if(state.mode !== "overworld") return;
+
+    const now=performance.now();
+
+    // move logic
+    const dirFromJoy = joyToDir();
+    const localMoveReady = (now - lastMoveAt) > MOVE_COOLDOWN_MS;
+
+    if(state.role==="host" || state.role==="offline"){
+      if(localMoveReady){
+        let moved=false;
+        if(dirFromJoy.dx||dirFromJoy.dy){
+          moved = moveWithDir(state.player1, dirFromJoy.dx, dirFromJoy.dy);
+        } else if(keys.has("ArrowUp")) moved = moveWithDir(state.player1,0,-1);
+        else if(keys.has("ArrowDown")) moved = moveWithDir(state.player1,0,1);
+        else if(keys.has("ArrowLeft")) moved = moveWithDir(state.player1,-1,0);
+        else if(keys.has("ArrowRight")) moved = moveWithDir(state.player1,1,0);
+
+        if(moved){
+          lastMoveAt = now;
+          // Host-only wild encounters
+          if(state.role==="host" && tileAt(state.player1.x, state.player1.y)===2 && Math.random() < 0.14){
+            startWildBattle();
+          }
+        }
+      }
+
+      if(consumePress("KeyE") || consumePress("Enter")) interactAs(1);
+
+      // sync tick
+      if(state.role==="host" && state.connected && (now-lastNetTick)>110){
+        lastNetTick=now;
+        broadcastState(false);
+      }
+
+    } else if(state.role==="guest"){
+      if(localMoveReady){
+        let dx=0, dy=0;
+        if(dirFromJoy.dx||dirFromJoy.dy){
+          dx=dirFromJoy.dx; dy=dirFromJoy.dy;
+        } else if(keys.has("ArrowUp")) dy=-1;
+        else if(keys.has("ArrowDown")) dy=1;
+        else if(keys.has("ArrowLeft")) dx=-1;
+        else if(keys.has("ArrowRight")) dx=1;
+
+        if(dx||dy){
+          state.player2.dir=dirFrom(dx,dy);
+          netSend({t:"input", dx, dy});
+          lastMoveAt=now;
+        }
+      }
+
+      if(consumePress("KeyE") || consumePress("Enter")){
+        netSend({t:"input", interact:true});
+      }
+    }
+  }
+
+  // ========= Rendering =========
+  const canvas=$("#game");
+  const ctx=canvas.getContext("2d");
+
+  function roundRect(x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y, x+w,y+h, r);
+    ctx.arcTo(x+w,y+h, x,y+h, r);
+    ctx.arcTo(x,y+h, x,y, r);
+    ctx.arcTo(x,y, x+w,y, r);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawPlayer(p, camX, camY){
+    const px=p.x*TILE-camX;
+    const py=p.y*TILE-camY;
+    ctx.fillStyle=p.color;
+    roundRect(px+5,py+5,TILE-10,TILE-10,12);
+    ctx.fillStyle="rgba(0,0,0,.25)";
+    const fx=p.dir==="left"?px+8:p.dir==="right"?px+TILE-14:px+TILE/2-3;
+    const fy=p.dir==="up"?py+8:p.dir==="down"?py+TILE-14:py+TILE/2-3;
+    ctx.fillRect(fx,fy,6,6);
+  }
+
+  function draw(){
+    const focus = (state.role==="guest") ? state.player2 : state.player1;
+    const camX = focus.x*TILE - canvas.width/2 + TILE/2;
+    const camY = focus.y*TILE - canvas.height/2 + TILE/2;
+
+    ctx.fillStyle="#0b0f14";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    for(let y=0;y<MAP_H;y++){
+      for(let x=0;x<MAP_W;x++){
+        const px=x*TILE-camX, py=y*TILE-camY;
+        if(px<-TILE||py<-TILE||px>canvas.width+TILE||py>canvas.height+TILE) continue;
+        const t=map[y][x];
+        if(t===0){ ctx.fillStyle="#1a2436"; ctx.fillRect(px,py,TILE,TILE); }
+        else if(t===1){ ctx.fillStyle="#303b52"; ctx.fillRect(px,py,TILE,TILE); }
+        else if(t===2){
+          ctx.fillStyle="#1a2f24"; ctx.fillRect(px,py,TILE,TILE);
+          ctx.fillStyle="rgba(98,217,107,.55)";
+          for(let i=0;i<5;i++) ctx.fillRect(px+6+i*5, py+10+(i%2)*6, 2,2);
+        } else if(t===3){
+          ctx.fillStyle="#15314a"; ctx.fillRect(px,py,TILE,TILE);
+          ctx.fillStyle="rgba(93,214,255,.25)"; ctx.fillRect(px+6,py+6,TILE-12,TILE-12);
+        }
+        ctx.strokeStyle="rgba(255,255,255,.04)";
+        ctx.strokeRect(px,py,TILE,TILE);
+      }
+    }
+
+    // NPCs
+    NPCS.forEach(n=>{
+      const px=n.x*TILE-camX, py=n.y*TILE-camY;
+      ctx.fillStyle = n.kind==="trainer" ? "#ff5d7a" : "#9aa7b6";
+      roundRect(px+6,py+6,TILE-12,TILE-12,10);
+    });
+
+    // Players
+    drawPlayer(state.player1, camX, camY);
+    drawPlayer(state.player2, camX, camY);
+
+    // YOU label
+    const lx=focus.x*TILE-camX+TILE/2, ly=focus.y*TILE-camY-10;
+    ctx.fillStyle="rgba(0,0,0,.55)";
+    roundRect(lx-34, ly-18, 68, 16, 8);
+    ctx.fillStyle="rgba(255,255,255,.85)";
+    ctx.font="12px ui-sans-serif";
+    ctx.textAlign="center";
+    ctx.fillText("YOU", lx, ly-6);
+
+    requestAnimationFrame(draw);
+  }
+
+  // ========= Buttons =========
+  $("#btnSave").onclick=save;
+  $("#btnLoad").onclick=load;
+  $("#btnReset").onclick=reset;
+  $("#btnParty").onclick=showParty;
+  $("#btnBag").onclick=showBag;
+
+  $("#btnHost").onclick=startHost;
+  $("#btnJoin").onclick=()=>{
+    const code=($("#joinCode").value||"").trim();
+    if(!code) return alert("Bitte den Host-Code einfügen.");
+    joinRoom(code);
+  };
+  $("#btnDisconnect").onclick=closeNet;
+
+  $("#btnHelp").onclick=()=>{
+    const body=document.createElement("div");
+    body.innerHTML = `
+      <div class="small"><b>Steuerung</b></div>
+      <div class="hr"></div>
+      <div class="small">
+        <b>Touch:</b><br/>
+        • Joystick links = laufen<br/>
+        • A = interagieren / bestätigen<br/>
+        • B = zurück (schließt Menüs)<br/>
+        • Party / Bag = Menüs<br/><br/>
+        <b>Multiplayer:</b><br/>
+        • Gerät 1: Host → Code teilen<br/>
+        • Gerät 2: Join → Code einfügen<br/><br/>
+        <b>Koop-Kampf:</b> Host startet bei Trainer Kael. Dann kämpft ihr abwechselnd (P1 → P2 → Gegner).<br/>
+        Tipp: GitHub Pages (HTTPS) + WLAN ist am zuverlässigsten.
+      </div>`;
+    openModal("Controls", body);
+  };
+
+  // ========= Boot =========
+  function boot(){
+    setStatus("Offline", false);
+    renderInfo();
+    log("Bereit! Tippe Host oder Join.", true);
+    draw();
+    setInterval(()=>{
+      handleInput();
+      renderInfo();
+
+      // guest: if battle exists but modal not open, reopen
+      if(state.role==="guest" && state.battle && state.mode==="battle" && !overlay.classList.contains("show")){
+        openBattleUI({netControlled:true});
+      }
+    }, 90);
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
